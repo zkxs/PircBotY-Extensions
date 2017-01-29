@@ -1,9 +1,11 @@
 package net.ae97.pokebot.extensions.mcping;
 
+import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.channels.SocketChannel;
 import java.util.Hashtable;
 
 import javax.naming.Context;
@@ -103,6 +105,14 @@ public class Server {
      */
     public boolean isSrvBroken() {
         return isSrvBroken;
+    }
+    
+    /**
+     * Get the address of this server, taking SRV records into account
+     * @return The address of this server
+     */
+    public InetSocketAddress getAddress() {
+        return address;
     }
     
     @Override
