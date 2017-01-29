@@ -48,6 +48,10 @@ public class Server {
     private boolean isSrvBroken = false; // was there some broken SRV stuff?
     private SrvRecord srvRecord; // if non-null, then this is what we're using
 
+    public Server(String hostPort) throws NamingException, URISyntaxException {
+        this(Server.parseHostPort(hostPort));
+    }
+    
     public Server(InetSocketAddress providedAddress) throws NamingException {
         
         /* The following gross conditional statements determine if the provided address:

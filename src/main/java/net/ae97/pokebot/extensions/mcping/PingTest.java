@@ -1,35 +1,33 @@
 package net.ae97.pokebot.extensions.mcping;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.net.URISyntaxException;
 
 import javax.naming.NamingException;
 
 import net.ae97.pokebot.extensions.mcping.connection.Manager;
-import net.ae97.pokebot.extensions.mcping.connection.Pinger;
 
 public class PingTest {
-    public static void main(String[] args) {
+    public static void main(String[] args) throws InterruptedException {
         try {
             Manager manager = new Manager();
-            
-            InetSocketAddress providedAddress = Server.parseHostPort("michaelripley.net:22");
-            Server server = new Server(providedAddress);
 
-            server.isSrvBroken();
-            server.isSrvRecord();
+            Server server1 = new Server("mc.michaelripley.net");
+            Server server2 = new Server("mc.michaelripley.net");
+
+            server1.isSrvBroken();
+            server1.isSrvRecord();
+
+            System.out.println(server1);
             
-            System.out.println(server);
+            System.out.println("foo");
+            manager.ping(server1);
+            System.out.println("bar");
             
-            Pinger pinger = new Pinger(manager);
-            pinger.ping(server);
-            
-            
-            InetSocketAddress addr2 = Server.parseHostPort("mc.michaelripley.net");
-            Server server2 = new Server(addr2);
-            pinger.ping(server);
-            
+            Thread.sleep(11000);
+
+            System.out.println(server2);
+            manager.ping(server2);
 
         } catch (URISyntaxException e) {
             System.err.println(e.getMessage()); // TODO: bot output
@@ -37,12 +35,12 @@ public class PingTest {
             System.err.println(e.getMessage()); // TODO: bot output
             // TODO: log e
         } catch (UnexpectedPingException e) {
-            e.printStackTrace(); // TODO: bot output
+            System.err.println(e.getMessage()); // TODO: bot output
             // TODO: log e
         } catch (PingException e) {
-            e.printStackTrace(); // TODO: bot output
+            System.err.println(e.getMessage()); // TODO: bot output
         } catch (IOException e) {
-            e.printStackTrace(); // TODO bot output
+            System.err.println(e.getMessage()); // TODO: bot output
             // TODO log e
         }
     }

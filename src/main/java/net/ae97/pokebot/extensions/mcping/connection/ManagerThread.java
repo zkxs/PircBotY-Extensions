@@ -11,7 +11,7 @@ import net.ae97.pokebot.extensions.mcping.connection.Manager.ManagerCallback;
 
 public class ManagerThread implements Runnable {
     
-    private static final long SELECTOR_TIMEOUT = Long.MAX_VALUE;
+    private static final long SELECTOR_TIMEOUT = 10000;
     private static final int MAX_PACKET_SIZE = 65535;
     
     private Selector selector;
