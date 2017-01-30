@@ -18,8 +18,6 @@ public class Server {
 
     // default ports
     private static final int DEFAULT_SERVER_PORT = 25565;
-    private static final int DEFAULT_QUERY_PORT = 25565;
-    private static final int DEFAULT_RCON_PORT = 25575;
 
     /* ******************************* End of static stuff, beginning of fields ******************************* */
 
