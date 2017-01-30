@@ -99,7 +99,7 @@ public class Manager {
         }
         
         PingImplementationFactory factory = LegacyStatus::new;
-        PingImplementation pingImpl = factory.construct(this, socketChannel, new PingResultCallback(commandEvent));
+        PingImplementation pingImpl = factory.construct(this, socketChannel, new PingResultCallback(commandEvent, server));
         pingImpl.ping();
     }
     
