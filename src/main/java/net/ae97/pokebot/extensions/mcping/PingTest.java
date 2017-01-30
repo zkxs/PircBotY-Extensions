@@ -12,22 +12,19 @@ public class PingTest {
         try {
             Manager manager = new Manager();
 
-            Server server1 = new Server("mc.michaelripley.net");
+            Server server1 = new Server("localhost");
             Server server2 = new Server("mc.michaelripley.net");
 
             server1.isSrvBroken();
             server1.isSrvRecord();
 
-            System.out.println(server1);
-            
-            System.out.println("foo");
-            manager.ping(server1);
-            System.out.println("bar");
+            System.out.println(server2);
+            manager.ping(server2);
             
             Thread.sleep(11000);
 
-            System.out.println(server2);
-            manager.ping(server2);
+            System.out.println(server1);
+            manager.ping(server1);
 
         } catch (URISyntaxException e) {
             System.err.println(e.getMessage()); // TODO: bot output

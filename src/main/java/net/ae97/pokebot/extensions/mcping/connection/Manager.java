@@ -28,7 +28,7 @@ public class Manager {
         startManager();
     }
     
-    private void startManager() {
+    private synchronized void startManager() {
         if (!threadRunning) {
             threadRunning = true;
             managerThread = new Thread(new ManagerThread(selector, this::threadClosedCallback), "McPing-Selector");
@@ -47,10 +47,12 @@ public class Manager {
      */
     public SelectionKey registerChannel(SelectableChannel channel, int ops, ManagerCallback attachment)
             throws PingException {
-        System.out.println("REGISTERING CHANNEL");
         try {
             channel.configureBlocking(false);
+            selector.wakeup();
+            System.out.println("REG...");
             final SelectionKey key = channel.register(selector, ops, attachment);
+            System.out.println("...DONE");
             startManager();
             return key;
         } catch (ClosedChannelException e) {
