@@ -8,8 +8,6 @@ import java.net.URISyntaxException;
 import javax.naming.NameNotFoundException;
 import javax.naming.NamingException;
 
-import jline.internal.Nullable;
-
 /**
  * Represents the server we will attempt to query
  * @author zkxs (zkxs00@gmail.com)
@@ -106,9 +104,8 @@ public class Server {
     /**
      * Get the IP address (e.g. "8.8.8.8") from an InetAddress
      * @param address the InetAddress
-     * @return IPv4 or IPv6 address corresponding to <code>address</code>
+     * @return IPv4 or IPv6 address corresponding to <code>address</code> or <code>null</code> if none was found
      */
-    @Nullable
     private String getIp(InetAddress address) {
         if (address == null) {
             return null;

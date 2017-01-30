@@ -1,17 +1,15 @@
 package net.ae97.pokebot.extensions.mcping;
 
+import java.util.Hashtable;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import javax.naming.Context;
 import javax.naming.NamingException;
 import javax.naming.directory.Attribute;
 import javax.naming.directory.Attributes;
 import javax.naming.directory.DirContext;
 import javax.naming.directory.InitialDirContext;
-
-import jline.internal.Nullable;
-
-import java.util.regex.Pattern;
-import java.util.Hashtable;
-import java.util.regex.Matcher;
 
 public class SrvRecord {
 
@@ -78,10 +76,9 @@ public class SrvRecord {
     /**
      * Resolve a SRV record
      * @param host something like "mc.michaelripley.net"
-     * @return a SrvRecord object, or null if there was no SRV record
+     * @return a SrvRecord object, or <code>null</code> if there was no SRV record
      * @throws NamingException If the SRV record was broken or invalid in some way
      */
-    @Nullable
     public static SrvRecord resolveSRV(String host) throws NamingException {
         final DirContext ctx = new InitialDirContext(DNS_ENVIRONMENT);
         final Attributes attrs = ctx.getAttributes(SRV_PREFIX + host, DESIRED_RECORD);
