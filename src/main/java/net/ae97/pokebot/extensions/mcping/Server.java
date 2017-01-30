@@ -4,12 +4,9 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.logging.Level;
 
 import javax.naming.NameNotFoundException;
 import javax.naming.NamingException;
-
-import net.ae97.pokebot.PokeBot;
 
 /**
  * Represents the server we will attempt to query
