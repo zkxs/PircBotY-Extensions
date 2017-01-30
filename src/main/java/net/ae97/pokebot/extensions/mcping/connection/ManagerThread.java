@@ -13,8 +13,11 @@ import java.util.concurrent.locks.Lock;
  * This is the thread that handles reading responses to pings.
  */
 public class ManagerThread implements Runnable {
+    // TODO: get these from Config
     private static final long SELECTOR_CLOSE_TIMEOUT = 30000L;
     private static final long SELECTOR_SELECT_TIMEOUT = 500L;
+    
+    // max size of a TCP packet
     private static final int MAX_PACKET_SIZE = 65535;
     
     private Selector selector;
@@ -26,7 +29,7 @@ public class ManagerThread implements Runnable {
     private long lastEventTime;
     
     /** I know it's bigish, but there is only one at any given time. */
-    private ByteBuffer receiverBuffer = ByteBuffer.allocate(65535);
+    private ByteBuffer receiverBuffer = ByteBuffer.allocate(MAX_PACKET_SIZE);
     
     /** Used for avoiding select/register race condition */
     private Lock lock;

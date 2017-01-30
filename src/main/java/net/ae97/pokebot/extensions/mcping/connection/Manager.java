@@ -1,7 +1,6 @@
 package net.ae97.pokebot.extensions.mcping.connection;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
@@ -107,10 +106,6 @@ public class Manager {
      */
     private void callback(PingResult pingResult) {
         System.out.println(pingResult.getMessage());
-        
-        //TODO: don't exit
-        //System.out.println("EXITING");
-        //System.exit(0);
     }
     
     /**

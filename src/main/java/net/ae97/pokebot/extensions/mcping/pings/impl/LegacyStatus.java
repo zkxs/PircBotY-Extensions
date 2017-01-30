@@ -15,7 +15,10 @@ import net.ae97.pokebot.extensions.mcping.pings.PingImplementation;
 import net.ae97.pokebot.extensions.mcping.pings.exceptions.PingException;
 import net.ae97.pokebot.extensions.mcping.pings.exceptions.UnexpectedPingException;
 
-//TODO: document
+/**
+ * Works on clients version 1.4 and up.
+ * <br>See <a href="http://wiki.vg/Server_List_Ping">http://wiki.vg/Server_List_Ping</a>.
+ */
 public class LegacyStatus implements PingImplementation {
     
     private static final byte[] MAGIC_NUMBER = {(byte) 0xFE, 0x01};
@@ -34,6 +37,7 @@ public class LegacyStatus implements PingImplementation {
         this.callback = callback;
     }
     
+    @Override
     public void ping() throws PingException {
         final ByteBuffer sendBuf = ByteBuffer.wrap(MAGIC_NUMBER);
         
@@ -43,10 +47,13 @@ public class LegacyStatus implements PingImplementation {
             throw new UnexpectedPingException(e);
         }
         
+        // register listener for server response
         manager.registerChannel(socketChannel, SelectionKey.OP_READ, this::onReadable);
     }
     
+    @Override
     public void onReadable(SelectionKey key, ByteBuffer receiveBuffer) {
+        //TODO: document me!
         receiveBuffer.clear();
         try {
             socketChannel.read(receiveBuffer);
@@ -119,7 +126,8 @@ public class LegacyStatus implements PingImplementation {
         try {
             socketChannel.close();
         } catch (IOException e) {
-            // TODO Auto-generated catch block
+            // TODO log
+            // We really don't care if we can't close the socket at this point. We're done with it.
             e.printStackTrace();
         }
         
