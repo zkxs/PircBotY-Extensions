@@ -6,6 +6,7 @@ import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
+import java.nio.channels.UnresolvedAddressException;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
@@ -93,6 +94,8 @@ public class Manager {
         
         try {
             socketChannel = SocketChannel.open(server.getAddress());
+        } catch (UnresolvedAddressException e) {
+            throw new PingException("Address Not resolved: " + server.getAddress().toString(), e);
         } catch (IOException e) {
             throw new PingException(e);
         }

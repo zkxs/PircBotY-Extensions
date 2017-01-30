@@ -132,7 +132,7 @@ public class Server {
         int port = uri.getPort();
 
         if (host == null) {
-            throw new URISyntaxException(uri.toString(), "URI must have a host part");
+            throw new URISyntaxException(hostPort, "URI must have a host part");
         }
 
         // check if the URI actually has a port in it

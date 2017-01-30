@@ -62,7 +62,7 @@ public class LegacyStatus implements PingImplementation {
             final int bytesRead = socketChannel.read(receiveBuffer);
             
             if (bytesRead != -1) {
-                callback.onComplete(new PingFailure("Server did not close connection"));
+                callback.onComplete(new PingFailure("Server did not close connection. zkxs: fixme")); //FIXME
                 return;
             }
             
@@ -73,6 +73,12 @@ public class LegacyStatus implements PingImplementation {
         
         receiveBuffer.flip();
         receiveBuffer.order(ByteOrder.BIG_ENDIAN);
+        
+        if (receiveBuffer.remaining() < 3) {
+            callback.onComplete(
+                    new PingFailure(String.format("Invalid response size (%d)", receiveBuffer.remaining())));
+            return;
+        }
         
         final byte packetType = receiveBuffer.get();
         if (packetType != KICK_PACKET) {
