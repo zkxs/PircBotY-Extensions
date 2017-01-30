@@ -76,6 +76,12 @@ public class ManagerThread implements Runnable {
                         if (currentTime - cb.getLastActivityTime() > CONNECTION_KILL_TIMEOUT) {
                             cb.getCallback().onComplete(new PingFailure("Connection hung"));
                             key.cancel();
+                            try {
+                                key.channel().close();
+                            } catch (IOException e) {
+                                // We don't care if a hung connection can't be closed.
+                                // This is just to wrap up loose ends.
+                            }
                         }
                     }
                 }
