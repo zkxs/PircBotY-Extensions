@@ -4,9 +4,12 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.logging.Level;
 
 import javax.naming.NameNotFoundException;
 import javax.naming.NamingException;
+
+import net.ae97.pokebot.PokeBot;
 
 /**
  * Represents the server we will attempt to query
@@ -51,7 +54,7 @@ public class Server {
                     // could be a CNAME or something...
                     
                     // We'll log it and fall back to the provided address
-                    //TODO: log it
+                    PokeBot.getLogger().log(Level.WARNING, providedAddress + " has a broken SRV record");
                     this.address = providedAddress;
                     isSrvBroken = true;
                 } else {

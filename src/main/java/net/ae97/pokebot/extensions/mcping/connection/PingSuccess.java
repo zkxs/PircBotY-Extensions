@@ -1,5 +1,8 @@
 package net.ae97.pokebot.extensions.mcping.connection;
 
+import java.util.LinkedList;
+import java.util.List;
+
 public class PingSuccess implements PingResult {
     private String protocolVersion;
     private String serverVersion;
@@ -24,7 +27,9 @@ public class PingSuccess implements PingResult {
     }
     
     @Override
-    public String getMessage() {
-        return String.format("%s %s \"%s\" %d / %d", protocolVersion, serverVersion, motd, currentPlayers, maxPlayers);
+    public List<String> getMessage() {
+        final List<String> toReturn = new LinkedList<>();
+        toReturn.add(String.format("%s %s \"%s\" %d / %d", protocolVersion, serverVersion, motd, currentPlayers, maxPlayers));
+        return toReturn;
     }
 }

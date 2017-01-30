@@ -7,6 +7,9 @@ import java.nio.channels.Selector;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.locks.Lock;
+import java.util.logging.Level;
+
+import net.ae97.pokebot.PokeBot;
 
 /**
  * Companion class to {@link Manager}.
@@ -87,7 +90,7 @@ public class ManagerThread implements Runnable {
                 
             } catch (IOException e) {
                 // Could be thrown by selector.select
-                e.printStackTrace(); // TODO: log
+                PokeBot.getLogger().log(Level.SEVERE, "Selector.select() I/O error", e);
             }
         }
         

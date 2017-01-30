@@ -8,7 +8,10 @@ import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.logging.Level;
 
+import net.ae97.pircboty.api.events.CommandEvent;
+import net.ae97.pokebot.PokeBot;
 import net.ae97.pokebot.extensions.mcping.Server;
 import net.ae97.pokebot.extensions.mcping.pings.PingImplementation;
 import net.ae97.pokebot.extensions.mcping.pings.PingImplementationFactory;
@@ -42,7 +45,7 @@ public class Manager {
             final Thread managerThread = new Thread(new ManagerThread(selector, this::threadClosedCallback, lock),
                     "McPing-Selector-" + System.currentTimeMillis());
             managerThread.setDaemon(false);
-            System.out.println("MANAGER STARTING UP"); // TODO: remove
+            PokeBot.getLogger().log(Level.INFO, "McPing Manager starting up");
             managerThread.start();
         }
     }
@@ -85,7 +88,7 @@ public class Manager {
         }
     }
     
-    public void ping(Server server) throws PingException {
+    public void ping(CommandEvent commandEvent, Server server) throws PingException {
         
         SocketChannel socketChannel = null;
         
@@ -96,16 +99,8 @@ public class Manager {
         }
         
         PingImplementationFactory factory = LegacyStatus::new;
-        PingImplementation pingImpl = factory.construct(this, socketChannel, this::callback);
+        PingImplementation pingImpl = factory.construct(this, socketChannel, new PingResultCallback(commandEvent));
         pingImpl.ping();
-    }
-    
-    /**
-     * Called by the {@link PingImplementation} when the ping has completed.
-     * @param pingResult The result of the ping
-     */
-    private void callback(PingResult pingResult) {
-        System.out.println(pingResult.getMessage());
     }
     
     /**
@@ -113,7 +108,7 @@ public class Manager {
      */
     private void threadClosedCallback() {
         threadRunning = false;
-        System.out.println("MANAGER SHUTTING DOWN"); //TODO: remove
+        PokeBot.getLogger().log(Level.INFO, "McPing Manager shutting down");
         // We can't just restart the thread here, as that would keep things from being garbage collected.
         // Therefore, we restart it next time we see a command.
     }

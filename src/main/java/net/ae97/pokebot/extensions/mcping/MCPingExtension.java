@@ -16,9 +16,7 @@
  */
 package net.ae97.pokebot.extensions.mcping;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.net.URISyntaxException;
 import java.util.logging.Level;
 
@@ -60,7 +58,7 @@ public class MCPingExtension extends Extension implements CommandExecutor {
         
         try {
             Server server = new Server(ce.getArgs()[0]);
-            manager.ping(server);
+            manager.ping(ce, server);
         } catch (URISyntaxException e) {
             ce.respond("Error: " + e.getMessage());
         } catch (NamingException e) {

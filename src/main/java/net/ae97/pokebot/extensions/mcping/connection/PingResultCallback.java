@@ -1,11 +1,22 @@
 package net.ae97.pokebot.extensions.mcping.connection;
 
-@FunctionalInterface
-public interface PingResultCallback {
+import net.ae97.pircboty.api.events.CommandEvent;
+
+public class PingResultCallback {
+    
+    private CommandEvent commandEvent;
+    
+    public PingResultCallback(CommandEvent commandEvent) {
+        this.commandEvent = commandEvent;
+    }
     
     /**
      * Called when a ping has completed.
      * @param pingResult The result of a ping.
      */
-    void onComplete(PingResult pingResult);
+    public void onComplete(PingResult pingResult) {
+        for (String line: pingResult.getMessage()) {
+            commandEvent.respond(line);
+        }
+    }
 }

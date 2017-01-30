@@ -1,17 +1,20 @@
 package net.ae97.pokebot.extensions.mcping.connection;
 
+import java.util.LinkedList;
+import java.util.List;
+
 public class PingFailure implements PingResult {
-    private String message;
+    private List<String> messageList = new LinkedList<>();
 
     /**
      * @param message message detailing how the ping failed
      */
     public PingFailure(String message) {
-        this.message = message;
+        messageList.add(message);
     }
 
     @Override
-    public String getMessage() {
-        return message;
+    public List<String> getMessage() {
+        return messageList;
     }
 }

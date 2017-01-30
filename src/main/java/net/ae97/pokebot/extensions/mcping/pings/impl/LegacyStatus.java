@@ -6,7 +6,9 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
+import java.util.logging.Level;
 
+import net.ae97.pokebot.PokeBot;
 import net.ae97.pokebot.extensions.mcping.connection.Manager;
 import net.ae97.pokebot.extensions.mcping.connection.PingResultCallback;
 import net.ae97.pokebot.extensions.mcping.connection.PingFailure;
@@ -91,7 +93,7 @@ public class LegacyStatus implements PingImplementation {
         try {
             responseString = new String(stringBuf, "UTF-16BE");
         } catch (UnsupportedEncodingException e) {
-            e.printStackTrace(); //TODO: log
+            PokeBot.getLogger().log(Level.SEVERE, "What kind of JRE doesn't support UTF-16BE?", e);
             callback.onComplete(new PingFailure("Unsupported Encoding: " + e.getMessage()));
             return;
         }
@@ -126,9 +128,8 @@ public class LegacyStatus implements PingImplementation {
         try {
             socketChannel.close();
         } catch (IOException e) {
-            // TODO log
             // We really don't care if we can't close the socket at this point. We're done with it.
-            e.printStackTrace();
+            PokeBot.getLogger().log(Level.WARNING, "Error closing SocketChannel", e);
         }
         
         callback.onComplete(new PingSuccess(fields[0], fields[1], fields[2], currentPlayers, maxPlayers));
