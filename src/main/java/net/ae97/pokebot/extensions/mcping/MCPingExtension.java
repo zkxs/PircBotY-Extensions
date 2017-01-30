@@ -52,7 +52,7 @@ public class MCPingExtension extends Extension implements CommandExecutor {
     @Override
     public void runEvent(CommandEvent ce) {
         if (ce.getArgs().length != 1) {
-            ce.respond("Usage: mcping <server ip>[:port]");
+            ce.getUser().send().notice("Usage: mcping <server ip>[:port]");
             return;
         }
         
