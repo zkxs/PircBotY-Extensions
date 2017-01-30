@@ -18,7 +18,17 @@ public class PingResultCallback {
      * @param pingResult The result of a ping.
      */
     public void onComplete(PingResult pingResult) {
-        // TODO: use server
+        StringBuilder serverLine = new StringBuilder();
+        serverLine.append(String.format("Pinging %s", server.toString()));
+        
+        if (server.isSrvBroken()) {
+            serverLine.append(" (misconfigured SRV record)");
+        }
+        else if (server.isSrvRecord()) {
+            serverLine.append(" using SRV record");
+        }
+        commandEvent.respond(serverLine.toString());
+        
         for (String line: pingResult.getMessage()) {
             commandEvent.respond(line);
         }

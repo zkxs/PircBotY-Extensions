@@ -99,7 +99,7 @@ public class Server {
     
     @Override
     public String toString() {
-        return address.getHostString() + ":" + address.getPort();
+        return getIp(address.getAddress()) + ":" + address.getPort();
     }
 
     /* ************************* End of object stuff, beginning of static util functions ************************* */

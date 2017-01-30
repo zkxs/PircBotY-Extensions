@@ -29,7 +29,7 @@ public class PingSuccess implements PingResult {
     @Override
     public List<String> getMessage() {
         final List<String> toReturn = new LinkedList<>();
-        toReturn.add(String.format("%s %s \"%s\" %d / %d", protocolVersion, serverVersion, motd, currentPlayers, maxPlayers));
+        toReturn.add(String.format("\"%s\" v%s %d/%d players", motd, serverVersion, currentPlayers, maxPlayers));
         return toReturn;
     }
 }
