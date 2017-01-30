@@ -19,11 +19,19 @@ package net.ae97.pokebot.extensions.mcping;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.URISyntaxException;
+import java.util.logging.Level;
+
+import javax.naming.NamingException;
+
 import net.ae97.pircboty.api.events.CommandEvent;
 import net.ae97.pokebot.PokeBot;
 import net.ae97.pokebot.api.CommandExecutor;
 import net.ae97.pokebot.extension.Extension;
 import net.ae97.pokebot.extension.ExtensionLoadFailedException;
+import net.ae97.pokebot.extensions.mcping.connection.Manager;
+import net.ae97.pokebot.extensions.mcping.pings.exceptions.PingException;
+import net.ae97.pokebot.extensions.mcping.pings.exceptions.UnexpectedPingException;
 
 /**
  *
@@ -31,9 +39,16 @@ import net.ae97.pokebot.extension.ExtensionLoadFailedException;
  */
 public class MCPingExtension extends Extension implements CommandExecutor {
 
+    private Manager manager;
+    
     @Override
     public void load() throws ExtensionLoadFailedException {
         PokeBot.getEventHandler().registerCommandExecutor(this);
+        try {
+            manager = new Manager();
+        } catch (IOException e) {
+            PokeBot.getLogger().log(Level.SEVERE, "Error starting McPing Manager", e);
+        }
     }
     
     @Override
@@ -41,15 +56,21 @@ public class MCPingExtension extends Extension implements CommandExecutor {
         if (ce.getArgs().length != 1) {
             ce.respond("Usage: mcping <server ip>[:port]");
             return;
-        }       
+        }
+        
         try {
-            Process pinger = new ProcessBuilder().command("python", "bin/mcping.py", ce.getArgs()[0]).start();
-            pinger.waitFor();
-            try (BufferedReader reader = new BufferedReader(new InputStreamReader(pinger.getInputStream()))) {
-                ce.respond(reader.readLine());
-            }
-        } catch (IOException | InterruptedException ex) {
-            ce.respond("Error pinging server: " + ex.getMessage());
+            Server server = new Server(ce.getArgs()[0]);
+            manager.ping(server);
+        } catch (URISyntaxException e) {
+            ce.respond("Error: " + e.getMessage());
+        } catch (NamingException e) {
+            ce.respond("Error: " + e.getMessage());
+            PokeBot.getLogger().log(Level.WARNING, "Error during DNS query", e);
+        } catch (UnexpectedPingException e) {
+            ce.respond("Error: " + e.getMessage());
+            PokeBot.getLogger().log(Level.WARNING, "Error during ping", e);
+        } catch (PingException e) {
+            ce.respond("Error: " + e.getMessage());
         }
     }
 
