@@ -6,6 +6,8 @@ import java.net.URISyntaxException;
 import javax.naming.NamingException;
 
 import net.ae97.pokebot.extensions.mcping.connection.Manager;
+import net.ae97.pokebot.extensions.mcping.pings.exceptions.PingException;
+import net.ae97.pokebot.extensions.mcping.pings.exceptions.UnexpectedPingException;
 
 public class PingTest {
     public static void main(String[] args) throws InterruptedException {

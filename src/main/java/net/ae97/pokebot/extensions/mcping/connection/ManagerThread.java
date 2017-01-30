@@ -8,15 +8,19 @@ import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.locks.Lock;
 
-import net.ae97.pokebot.extensions.mcping.connection.Manager.ManagerCallback;
-
+/**
+ * Companion class to {@link Manager}.
+ * This is the thread that handles reading responses to pings.
+ */
 public class ManagerThread implements Runnable {
     private static final long SELECTOR_CLOSE_TIMEOUT = 30000L;
     private static final long SELECTOR_SELECT_TIMEOUT = 500L;
     private static final int MAX_PACKET_SIZE = 65535;
     
     private Selector selector;
-    private Runnable callback; // called as this thread shuts down
+    
+    /** called as this thread shuts down */
+    private Runnable callback;
     
     /** last time something interesting happened */
     private long lastEventTime;
@@ -27,6 +31,11 @@ public class ManagerThread implements Runnable {
     /** Used for avoiding select/register race condition */
     private Lock lock;
     
+    /**
+     * @param selector Selector from Manager
+     * @param callback Called when this ManagerThread shuts down
+     * @param lock Lock from Manager
+     */
     public ManagerThread(Selector selector, Runnable callback, Lock lock) {
         this.selector = selector;
         this.callback = callback;
@@ -66,7 +75,7 @@ public class ManagerThread implements Runnable {
                     key.cancel();
                     
                     // Call this key's callback. See PingImplementation.
-                    final ManagerCallback cb = (ManagerCallback) key.attachment();
+                    final PingReadCallback cb = (PingReadCallback) key.attachment();
                     cb.onReadable(key, receiverBuffer);
                     
                     // Remove this key from the selection set.

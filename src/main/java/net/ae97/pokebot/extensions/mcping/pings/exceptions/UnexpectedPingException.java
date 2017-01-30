@@ -1,5 +1,8 @@
-package net.ae97.pokebot.extensions.mcping;
+package net.ae97.pokebot.extensions.mcping.pings.exceptions;
 
+/**
+ * Thrown when a ping fails for some crazy oddball reason
+ */
 public class UnexpectedPingException extends PingException {
 
     private static final long serialVersionUID = 1L;

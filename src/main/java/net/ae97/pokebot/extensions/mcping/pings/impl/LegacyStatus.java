@@ -1,4 +1,4 @@
-package net.ae97.pokebot.extensions.mcping.legacy;
+package net.ae97.pokebot.extensions.mcping.pings.impl;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -6,17 +6,16 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
-import java.util.Arrays;
 
-import net.ae97.pokebot.extensions.mcping.PingException;
-import net.ae97.pokebot.extensions.mcping.UnexpectedPingException;
 import net.ae97.pokebot.extensions.mcping.connection.Manager;
-import net.ae97.pokebot.extensions.mcping.connection.PingCallback;
+import net.ae97.pokebot.extensions.mcping.connection.PingResultCallback;
 import net.ae97.pokebot.extensions.mcping.connection.PingFailure;
-import net.ae97.pokebot.extensions.mcping.connection.PingImplementation;
-import net.ae97.pokebot.extensions.mcping.connection.PingResult;
 import net.ae97.pokebot.extensions.mcping.connection.PingSuccess;
+import net.ae97.pokebot.extensions.mcping.pings.PingImplementation;
+import net.ae97.pokebot.extensions.mcping.pings.exceptions.PingException;
+import net.ae97.pokebot.extensions.mcping.pings.exceptions.UnexpectedPingException;
 
+//TODO: document
 public class LegacyStatus implements PingImplementation {
     
     private static final byte[] MAGIC_NUMBER = {(byte) 0xFE, 0x01};
@@ -27,9 +26,9 @@ public class LegacyStatus implements PingImplementation {
     
     private Manager manager;
     private SocketChannel socketChannel;
-    private PingCallback callback;
+    private PingResultCallback callback;
     
-    public LegacyStatus(Manager manager, SocketChannel socketChannel, PingCallback callback) {
+    public LegacyStatus(Manager manager, SocketChannel socketChannel, PingResultCallback callback) {
         this.manager = manager;
         this.socketChannel = socketChannel;
         this.callback = callback;

@@ -1,20 +1,12 @@
 package net.ae97.pokebot.extensions.mcping;
 
-import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.channels.SocketChannel;
-import java.util.Hashtable;
 
-import javax.naming.Context;
 import javax.naming.NameNotFoundException;
 import javax.naming.NamingException;
-import javax.naming.directory.Attribute;
-import javax.naming.directory.Attributes;
-import javax.naming.directory.DirContext;
-import javax.naming.directory.InitialDirContext;
 
 import jline.internal.Nullable;
 
@@ -28,19 +20,6 @@ public class Server {
     private static final int DEFAULT_SERVER_PORT = 25565;
     private static final int DEFAULT_QUERY_PORT = 25565;
     private static final int DEFAULT_RCON_PORT = 25575;
-
-    private static final String SRV_PREFIX = "_minecraft._tcp."; // DNS SRV query prefix
-    private static final String[] DESIRED_RECORD = { "SRV" }; // desired DNS records
-
-    // environment used for making DNS queries
-    private static final Hashtable<String, String> DNS_ENVIRONMENT = new Hashtable<>();
-
-    static {
-        // Seems to work fine on OpenJDK
-        DNS_ENVIRONMENT.put(Context.INITIAL_CONTEXT_FACTORY, "com.sun.jndi.dns.DnsContextFactory");
-        // use system DNS settings
-        DNS_ENVIRONMENT.put(Context.PROVIDER_URL, "dns:");
-    }
 
     /* ******************************* End of static stuff, beginning of fields ******************************* */
 
@@ -68,7 +47,7 @@ public class Server {
         if (ipAddress == null || !ipAddress.equals(providedAddress.getHostString())) {
             // we were given a host name
             try {
-                srvRecord = resolveSRV(providedAddress.getHostString());
+                srvRecord = SrvRecord.resolveSRV(providedAddress.getHostString());
     
                 if (srvRecord == null) {
                     // indicates that _minecraft._tcp.host exists but doesn't have a SRV record!?
@@ -166,22 +145,4 @@ public class Server {
         return new InetSocketAddress(host, port);
     }
 
-    /**
-     * 
-     * @param host
-     * @return
-     * @throws NamingException
-     *             If host not found
-     */
-    @Nullable
-    public static SrvRecord resolveSRV(String host) throws NamingException {
-        final DirContext ctx = new InitialDirContext(DNS_ENVIRONMENT);
-        final Attributes attrs = ctx.getAttributes(SRV_PREFIX + host, DESIRED_RECORD);
-        final Attribute attr = attrs.get("srv"); // might be null if host exists but has no SRV record
-        if (attr == null) {
-            return null;
-        } else {
-            return new SrvRecord((String) attr.get());
-        }
-    }
 }

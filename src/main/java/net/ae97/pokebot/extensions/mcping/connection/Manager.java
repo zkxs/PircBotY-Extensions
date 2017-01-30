@@ -10,11 +10,17 @@ import java.nio.channels.SocketChannel;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import net.ae97.pokebot.extensions.mcping.PingException;
 import net.ae97.pokebot.extensions.mcping.Server;
-import net.ae97.pokebot.extensions.mcping.UnexpectedPingException;
-import net.ae97.pokebot.extensions.mcping.legacy.LegacyStatus;
+import net.ae97.pokebot.extensions.mcping.pings.PingImplementation;
+import net.ae97.pokebot.extensions.mcping.pings.PingImplementationFactory;
+import net.ae97.pokebot.extensions.mcping.pings.exceptions.PingException;
+import net.ae97.pokebot.extensions.mcping.pings.exceptions.UnexpectedPingException;
+import net.ae97.pokebot.extensions.mcping.pings.impl.LegacyStatus;
 
+/**
+ * Keeps track of 
+ * TODO: document
+ */
 public class Manager {
     
     /** Multiplexes SocketChannels that we are reading from */
@@ -25,15 +31,6 @@ public class Manager {
     
     /** Used for avoiding select/register race condition */
     private Lock lock = new ReentrantLock();
-    
-    /**
-     * Used to callback to this Manager when the ManagerThread has closed.
-     * @see Manager#threadClosedCallback()
-     */
-    @FunctionalInterface
-    public static interface ManagerCallback {
-        public void onReadable(SelectionKey key, ByteBuffer receiveBuffer);
-    };
     
     public Manager() throws IOException {
         selector = Selector.open();
@@ -58,7 +55,7 @@ public class Manager {
      * @param ops
      * @throws ClosedChannelException
      */
-    public SelectionKey registerChannel(SelectableChannel channel, int ops, ManagerCallback attachment)
+    public SelectionKey registerChannel(SelectableChannel channel, int ops, PingReadCallback attachment)
             throws PingException {
         try {
             channel.configureBlocking(false);
