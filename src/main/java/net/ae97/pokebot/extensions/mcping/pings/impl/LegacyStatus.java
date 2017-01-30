@@ -32,6 +32,8 @@ public class LegacyStatus implements PingImplementation {
     private Manager manager;
     private SocketChannel socketChannel;
     private PingResultCallback callback;
+    private ByteBuffer receiveBuffer;
+    private long lastActivityTime = System.currentTimeMillis();
     
     public LegacyStatus(Manager manager, SocketChannel socketChannel, PingResultCallback callback) {
         this.manager = manager;
@@ -50,95 +52,127 @@ public class LegacyStatus implements PingImplementation {
         }
         
         // register listener for server response
-        manager.registerChannel(socketChannel, SelectionKey.OP_READ, this::onReadable);
+        manager.registerChannel(socketChannel, SelectionKey.OP_READ, this);
     }
     
     @Override
-    public void onReadable(SelectionKey key, ByteBuffer receiveBuffer) {
-        //TODO: document me!
-        receiveBuffer.clear();
+    public void onReadable(SelectionKey key) {
+
+        lastActivityTime = System.currentTimeMillis();
+        
+        if (receiveBuffer == null) {
+            receiveBuffer = manager.getMemoryManager().allocate();
+            receiveBuffer.clear();
+        }
+
         try {
-            socketChannel.read(receiveBuffer);
             final int bytesRead = socketChannel.read(receiveBuffer);
-            
+
             if (bytesRead != -1) {
-                callback.onComplete(new PingFailure("Server did not close connection. zkxs: fixme")); //FIXME
+                // we've read our bytes and will look at this again later.
                 return;
             }
-            
+
         } catch (IOException e) {
             callback.onComplete(new PingFailure("Error during read(): " + e.getMessage()));
+            cleanup(key);
             return;
         }
-        
-        receiveBuffer.flip();
-        receiveBuffer.order(ByteOrder.BIG_ENDIAN);
-        
-        if (receiveBuffer.remaining() < 3) {
-            callback.onComplete(
-                    new PingFailure(String.format("Invalid response size (%d)", receiveBuffer.remaining())));
-            return;
-        }
-        
-        final byte packetType = receiveBuffer.get();
-        if (packetType != KICK_PACKET) {
-            callback.onComplete(new PingFailure("Invalid response (incorrect magic number)"));
-            return;
-        }
-        
-        final int lengthPrefix = receiveBuffer.getShort() & 0xFFFF;
-        if (lengthPrefix * 2 != receiveBuffer.remaining()) {
-            callback.onComplete(new PingFailure("Invalid response (incorrect length-prefix)"));
-            return;
-        }
-        
-        byte[] stringBuf = new byte[receiveBuffer.remaining()];
-        receiveBuffer.get(stringBuf, 0, receiveBuffer.remaining());
-        
-        String responseString = null;
+            
+        /* This try doesn't catch anything. It's just so I can use a finally to
+         * free the receiveBuffer instead of doing so before every return.
+         */
         try {
-            responseString = new String(stringBuf, "UTF-16BE");
-        } catch (UnsupportedEncodingException e) {
-            PokeBot.getLogger().log(Level.SEVERE, "What kind of JRE doesn't support UTF-16BE?", e);
-            callback.onComplete(new PingFailure("Unsupported Encoding: " + e.getMessage()));
+
+            receiveBuffer.flip();
+            receiveBuffer.order(ByteOrder.BIG_ENDIAN);
+
+            if (receiveBuffer.remaining() < 3) {
+                callback.onComplete(
+                        new PingFailure(String.format("Invalid response size (%d)", receiveBuffer.remaining())));
+                return;
+            }
+
+            final byte packetType = receiveBuffer.get();
+            if (packetType != KICK_PACKET) {
+                callback.onComplete(new PingFailure("Invalid response (incorrect magic number)"));
+                return;
+            }
+
+            final int lengthPrefix = receiveBuffer.getShort() & 0xFFFF;
+            if (lengthPrefix * 2 != receiveBuffer.remaining()) {
+                callback.onComplete(new PingFailure("Invalid response (incorrect length-prefix)"));
+                return;
+            }
+
+            byte[] stringBuf = new byte[receiveBuffer.remaining()];
+            receiveBuffer.get(stringBuf, 0, receiveBuffer.remaining());
+
+            String responseString = null;
+            try {
+                responseString = new String(stringBuf, "UTF-16BE");
+            } catch (UnsupportedEncodingException e) {
+                PokeBot.getLogger().log(Level.SEVERE, "What kind of JRE doesn't support UTF-16BE?", e);
+                callback.onComplete(new PingFailure("Unsupported Encoding: " + e.getMessage()));
+                return;
+            }
+
+            if (!responseString.startsWith(RESPONSE_PREFIX)) {
+                callback.onComplete(new PingFailure("Invalid response (incorrect string-prefix)"));
+                return;
+            }
+
+            if (responseString.length() < PREFIX_LENGTH + 1) {
+                callback.onComplete(new PingFailure("Invalid response (nothing after string-prefix)"));
+                return;
+            }
+
+            final String[] fields = responseString.substring(PREFIX_LENGTH).split(NULL_CHAR);
+            if (fields.length != 5) {
+                callback.onComplete(new PingFailure("Invalid response (incorrect number of fields)"));
+                return;
+            }
+
+            int currentPlayers = -1;
+            int maxPlayers = -1;
+            try {
+                currentPlayers = Integer.parseInt(fields[3]);
+                maxPlayers = Integer.parseInt(fields[4]);
+            } catch (NumberFormatException e) {
+                callback.onComplete(new PingFailure("Invalid response (non-integer player count)"));
+                return;
+            }
+
+            try {
+                socketChannel.close();
+            } catch (IOException e) {
+                // We really don't care if we can't close the socket at this point. We're done with it.
+                PokeBot.getLogger().log(Level.WARNING, "Error closing SocketChannel", e);
+            }
+
+            callback.onComplete(new PingSuccess(fields[0], fields[1], fields[2], currentPlayers, maxPlayers));
             return;
+            
+        } finally {
+            cleanup(key);
         }
-        
-        if (! responseString.startsWith(RESPONSE_PREFIX)) {
-            callback.onComplete(new PingFailure("Invalid response (incorrect string-prefix)"));
-            return;
-        }
-        
-        if (responseString.length() < PREFIX_LENGTH + 1) {
-            callback.onComplete(new PingFailure("Invalid response (nothing after string-prefix)"));
-            return;
-        }
-        
-        final String[] fields = responseString.substring(PREFIX_LENGTH).split(NULL_CHAR);
-        if (fields.length != 5) {
-            callback.onComplete(new PingFailure("Invalid response (incorrect number of fields)"));
-            return;
-        }
-        
-        
-        int currentPlayers = -1;
-        int maxPlayers = -1;
-        try {
-            currentPlayers = Integer.parseInt(fields[3]);
-            maxPlayers = Integer.parseInt(fields[4]);
-        } catch (NumberFormatException e) {
-            callback.onComplete(new PingFailure("Invalid response (non-integer player count)"));
-            return;
-        }
-        
-        try {
-            socketChannel.close();
-        } catch (IOException e) {
-            // We really don't care if we can't close the socket at this point. We're done with it.
-            PokeBot.getLogger().log(Level.WARNING, "Error closing SocketChannel", e);
-        }
-        
-        callback.onComplete(new PingSuccess(fields[0], fields[1], fields[2], currentPlayers, maxPlayers));
-        return;
+    }
+    
+    /**
+     * Free any resources this ping was using
+     */
+    private void cleanup(SelectionKey key) {
+        manager.getMemoryManager().free(receiveBuffer);
+        key.cancel();
+    }
+
+    @Override
+    public long getLastActivityTime() {
+        return lastActivityTime;
+    }
+
+    @Override
+    public PingResultCallback getCallback() {
+        return callback;
     }
 }

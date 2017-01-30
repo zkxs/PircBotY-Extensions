@@ -1,7 +1,6 @@
 package net.ae97.pokebot.extensions.mcping.connection;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.util.Iterator;
@@ -10,6 +9,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.logging.Level;
 
 import net.ae97.pokebot.PokeBot;
+import net.ae97.pokebot.extensions.mcping.pings.PingImplementation;
 
 /**
  * Companion class to {@link Manager}.
@@ -19,9 +19,7 @@ public class ManagerThread implements Runnable {
     // TODO: get these from Config
     private static final long SELECTOR_CLOSE_TIMEOUT = 30000L;
     private static final long SELECTOR_SELECT_TIMEOUT = 500L;
-    
-    // max size of a TCP packet
-    private static final int MAX_PACKET_SIZE = 65535;
+    private static final long CONNECTION_KILL_TIMEOUT = 3000L;
     
     private Selector selector;
     
@@ -30,9 +28,6 @@ public class ManagerThread implements Runnable {
     
     /** last time something interesting happened */
     private long lastEventTime;
-    
-    /** I know it's bigish, but there is only one at any given time. */
-    private ByteBuffer receiverBuffer = ByteBuffer.allocate(MAX_PACKET_SIZE);
     
     /** Used for avoiding select/register race condition */
     private Lock lock;
@@ -63,6 +58,21 @@ public class ManagerThread implements Runnable {
                 lock.lock();
                 lock.unlock();
                 
+                // Scan for keys that have been lying around way too long and cancel them
+                /* restrict scope */ {
+                    final Set<SelectionKey> allKeys = selector.keys();
+                    final Iterator<SelectionKey> iterator = allKeys.iterator();
+                    final long currentTime = System.currentTimeMillis();
+                    while (iterator.hasNext()) {
+                        final SelectionKey key = iterator.next();
+                        final PingImplementation cb = (PingImplementation) key.attachment();
+                        if (currentTime - cb.getLastActivityTime() > CONNECTION_KILL_TIMEOUT) {
+                            cb.getCallback().onComplete(new PingFailure("Connection hung"));
+                            key.cancel();
+                        }
+                    }
+                }
+                
                 if (selected == 0) {
                     // if nothing is selected, skip back to the top of the while()
                     continue;
@@ -72,20 +82,19 @@ public class ManagerThread implements Runnable {
                 }
                 
                 // iterate over selected keys
-                final Set<SelectionKey> selectedKeys = selector.selectedKeys();
-                final Iterator<SelectionKey> iterator = selectedKeys.iterator();
-                while (iterator.hasNext()) {
-                    final SelectionKey key = iterator.next();
-                    
-                    // I never want to see this key again, so I remove it from the selector.
-                    key.cancel();
-                    
-                    // Call this key's callback. See PingImplementation.
-                    final PingReadCallback cb = (PingReadCallback) key.attachment();
-                    cb.onReadable(key, receiverBuffer);
-                    
-                    // Remove this key from the selection set.
-                    iterator.remove();
+                /* restrict scope */ {
+                    final Set<SelectionKey> selectedKeys = selector.selectedKeys();
+                    final Iterator<SelectionKey> iterator = selectedKeys.iterator();
+                    while (iterator.hasNext()) {
+                        final SelectionKey key = iterator.next();
+                        
+                        // Call this key's callback. See PingImplementation.
+                        final PingImplementation cb = (PingImplementation) key.attachment();
+                        cb.onReadable(key);
+                        
+                        // Remove this key from the selection set.
+                        iterator.remove();
+                    }
                 }
                 
             } catch (IOException e) {

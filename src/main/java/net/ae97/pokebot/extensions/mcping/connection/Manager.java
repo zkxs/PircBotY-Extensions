@@ -35,6 +35,9 @@ public class Manager {
     /** Used for avoiding select/register race condition */
     private Lock lock = new ReentrantLock();
     
+    /** Used to reuse large-ish bytebuffers */
+    private MemoryManager memoryManager = new MemoryManager();
+    
     public Manager() throws IOException {
         selector = Selector.open();
     }
@@ -57,7 +60,7 @@ public class Manager {
      * @param ops
      * @throws ClosedChannelException
      */
-    public SelectionKey registerChannel(SelectableChannel channel, int ops, PingReadCallback attachment)
+    public SelectionKey registerChannel(SelectableChannel channel, int ops, PingImplementation attachment)
             throws PingException {
         try {
             channel.configureBlocking(false);
@@ -113,5 +116,9 @@ public class Manager {
         PokeBot.getLogger().log(Level.INFO, "McPing Manager shutting down");
         // We can't just restart the thread here, as that would keep things from being garbage collected.
         // Therefore, we restart it next time we see a command.
+    }
+    
+    public MemoryManager getMemoryManager() {
+        return memoryManager;
     }
 }
