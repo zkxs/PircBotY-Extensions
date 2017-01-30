@@ -19,6 +19,13 @@ public class ManagerThread implements Runnable {
     // TODO: get these from Config
     private static final long SELECTOR_CLOSE_TIMEOUT = 30000L;
     private static final long SELECTOR_SELECT_TIMEOUT = 500L;
+    
+    /**
+     * How old does a connection have to be before we consider it hung?
+     * Should be much shorter than SELECTOR_CLOSE_TIMEOUT, or else the ManagerThread may shut down
+     * with this key still in the keyset. This would prevent its resources from being garbage collected
+     * until the next time someone runs a ping.
+     */
     private static final long CONNECTION_KILL_TIMEOUT = 3000L;
     
     private Selector selector;
