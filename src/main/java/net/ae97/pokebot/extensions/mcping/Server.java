@@ -23,7 +23,6 @@ public class Server {
     /* ******************************* End of static stuff, beginning of fields ******************************* */
 
     private InetSocketAddress address;
-    private boolean isSrvBroken = false; // was there some broken SRV stuff?
     private SrvRecord srvRecord; // if non-null, then this is what we're using
 
     public Server(String hostPort) throws NamingException, URISyntaxException {
@@ -49,14 +48,9 @@ public class Server {
                 srvRecord = SrvRecord.resolveSRV(providedAddress.getHostString());
     
                 if (srvRecord == null) {
-                    // indicates that _minecraft._tcp.host exists but doesn't have a SRV record!?
-                    // this means someone tried to make a SRV record, but it's not actually a SRV
-                    // could be a CNAME or something...
-                    
-                    // We'll log it and fall back to the provided address
-                    PokeBot.getLogger().log(Level.WARNING, providedAddress + " has a broken SRV record");
+                    // indicates that there is no SRV record, which is fine.
+                    // we'll just use the provided address
                     this.address = providedAddress;
-                    isSrvBroken = true;
                 } else {
                     // looks like a valid SRV record!
                     this.address = new InetSocketAddress(srvRecord.getTarget(), srvRecord.getPort());
@@ -79,14 +73,6 @@ public class Server {
      */
     public boolean isSrvRecord() {
         return srvRecord != null;
-    }
-    
-    /**
-     * Check if a broken SRV record was found
-     * @return <code>true</code> if a broken SRV record was found
-     */
-    public boolean isSrvBroken() {
-        return isSrvBroken;
     }
     
     /**

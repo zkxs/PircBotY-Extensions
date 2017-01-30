@@ -21,10 +21,7 @@ public class PingResultCallback {
         StringBuilder serverLine = new StringBuilder();
         serverLine.append(String.format("Pinging %s", server.toString()));
         
-        if (server.isSrvBroken()) {
-            serverLine.append(" (misconfigured SRV record)");
-        }
-        else if (server.isSrvRecord()) {
+        if (server.isSrvRecord()) {
             serverLine.append(" using SRV record");
         }
         commandEvent.respond(serverLine.toString());
