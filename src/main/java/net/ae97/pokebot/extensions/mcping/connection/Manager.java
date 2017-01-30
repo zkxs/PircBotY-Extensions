@@ -36,7 +36,6 @@ public class Manager {
     
     public Manager() throws IOException {
         selector = Selector.open();
-        startManager();
     }
     
     private synchronized void startManager() {
