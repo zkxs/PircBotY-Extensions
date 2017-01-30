@@ -9,7 +9,7 @@ public class PingSuccess implements PingResult {
     private String motd;
     private int currentPlayers;
     private int maxPlayers;
-    
+
     /**
      * Construct a successful ping
      * @param protocolVersion Protocol version (e.g. 127)
@@ -25,11 +25,12 @@ public class PingSuccess implements PingResult {
         this.currentPlayers = currentPlayers;
         this.maxPlayers = maxPlayers;
     }
-    
+
     @Override
     public List<String> getMessage() {
         final List<String> toReturn = new LinkedList<>();
-        toReturn.add(String.format("\"%s\" v%s %d/%d players", motd, serverVersion, currentPlayers, maxPlayers));
+        toReturn.add(String.format("Found \"%s\" running version %s with %d/%d players", motd, serverVersion,
+                currentPlayers, maxPlayers));
         return toReturn;
     }
 }
