@@ -6,6 +6,7 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.util.Iterator;
 import java.util.Set;
+import java.util.concurrent.locks.Lock;
 
 import net.ae97.pokebot.extensions.mcping.connection.Manager.ManagerCallback;
 
@@ -15,13 +16,21 @@ public class ManagerThread implements Runnable {
     private static final int MAX_PACKET_SIZE = 65535;
     
     private Selector selector;
-    private Runnable callback;
+    private Runnable callback; // called as this thread shuts down
+    
+    /** last time something interesting happened */
     private long lastEventTime;
+    
+    /** I know it's bigish, but there is only one at any given time. */
     private ByteBuffer receiverBuffer = ByteBuffer.allocate(65535);
     
-    public ManagerThread(Selector selector, Runnable callback) {
+    /** Used for avoiding select/register race condition */
+    private Lock lock;
+    
+    public ManagerThread(Selector selector, Runnable callback, Lock lock) {
         this.selector = selector;
         this.callback = callback;
+        this.lock = lock;
     }
     
     @Override
@@ -32,33 +41,45 @@ public class ManagerThread implements Runnable {
         while (System.currentTimeMillis() - lastEventTime < SELECTOR_CLOSE_TIMEOUT) {
             try {
                 final int selected = selector.select(SELECTOR_SELECT_TIMEOUT);
-                System.out.print("s");
+                
+                /* Prevent a race condition.
+                 * See comment in Manager.registerChannel() for full explanation.
+                 */
+                lock.lock();
+                lock.unlock();
                 
                 if (selected == 0) {
+                    // if nothing is selected, skip back to the top of the while()
                     continue;
                 } else {
+                    // something is selected. "touch" the Manager thread so it doesn't shut down.
                     lastEventTime = System.currentTimeMillis();
                 }
                 
+                // iterate over selected keys
                 final Set<SelectionKey> selectedKeys = selector.selectedKeys();
                 final Iterator<SelectionKey> iterator = selectedKeys.iterator();
-                
                 while (iterator.hasNext()) {
                     final SelectionKey key = iterator.next();
                     
+                    // I never want to see this key again, so I remove it from the selector.
                     key.cancel();
+                    
+                    // Call this key's callback. See PingImplementation.
                     final ManagerCallback cb = (ManagerCallback) key.attachment();
                     cb.onReadable(key, receiverBuffer);
                     
+                    // Remove this key from the selection set.
                     iterator.remove();
                 }
                 
             } catch (IOException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
+                // Could be thrown by selector.select
+                e.printStackTrace(); // TODO: log
             }
         }
         
+        // inform the Manager that the ManagerThread is shutting down
         callback.run();
     }
 }

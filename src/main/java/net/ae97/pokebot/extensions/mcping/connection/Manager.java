@@ -7,6 +7,8 @@ import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import net.ae97.pokebot.extensions.mcping.PingException;
 import net.ae97.pokebot.extensions.mcping.Server;
@@ -14,10 +16,20 @@ import net.ae97.pokebot.extensions.mcping.UnexpectedPingException;
 import net.ae97.pokebot.extensions.mcping.legacy.LegacyStatus;
 
 public class Manager {
+    
+    /** Multiplexes SocketChannels that we are reading from */
     private Selector selector;
-    private Thread managerThread;
+    
+    /** Is the manager thread running? */
     private volatile boolean threadRunning = false;
     
+    /** Used for avoiding select/register race condition */
+    private Lock lock = new ReentrantLock();
+    
+    /**
+     * Used to callback to this Manager when the ManagerThread has closed.
+     * @see Manager#threadClosedCallback()
+     */
     @FunctionalInterface
     public static interface ManagerCallback {
         public void onReadable(SelectionKey key, ByteBuffer receiveBuffer);
@@ -31,9 +43,10 @@ public class Manager {
     private synchronized void startManager() {
         if (!threadRunning) {
             threadRunning = true;
-            managerThread = new Thread(new ManagerThread(selector, this::threadClosedCallback), "McPing-Selector");
+            final Thread managerThread = new Thread(new ManagerThread(selector, this::threadClosedCallback, lock),
+                    "McPing-Selector-" + System.currentTimeMillis());
             managerThread.setDaemon(false);
-            System.out.println("MANAGER STARTING UP"); //TODO: remove
+            System.out.println("MANAGER STARTING UP"); // TODO: remove
             managerThread.start();
         }
     }
@@ -49,10 +62,24 @@ public class Manager {
             throws PingException {
         try {
             channel.configureBlocking(false);
+            
+            
+            /* channel.register() is dumb and blocks while selector.select() is blocking. This is bad because
+             * selector.select() is blocking most of the time, and we WANT it to be to avoid constant polling.
+             * 
+             * We can sort of work around this by calling selector.wakeup() to force selector.select() to return.
+             * However, this creates a race condition where sometimes selector.select() will be called again
+             * before we are able to call channel.register().
+             * 
+             * The lock here is to prevent the ManagerThread from continuing execution until we have finished
+             * registering the new channel.
+             */
+            
+            lock.lock();
             selector.wakeup();
-            System.out.println("REG...");
             final SelectionKey key = channel.register(selector, ops, attachment);
-            System.out.println("...DONE");
+            lock.unlock();
+            
             startManager();
             return key;
         } catch (ClosedChannelException e) {
@@ -77,6 +104,10 @@ public class Manager {
         pingImpl.ping();
     }
     
+    /**
+     * Called by the {@link PingImplementation} when the ping has completed.
+     * @param pingResult The result of the ping
+     */
     private void callback(PingResult pingResult) {
         System.out.println(pingResult.getMessage());
         
@@ -85,6 +116,9 @@ public class Manager {
         //System.exit(0);
     }
     
+    /**
+     * Called by the {@link ManagerThread} when this thread is closed.
+     */
     private void threadClosedCallback() {
         threadRunning = false;
         System.out.println("MANAGER SHUTTING DOWN"); //TODO: remove
