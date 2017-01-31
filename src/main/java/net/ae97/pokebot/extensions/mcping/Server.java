@@ -8,6 +8,8 @@ import java.net.URISyntaxException;
 import javax.naming.NameNotFoundException;
 import javax.naming.NamingException;
 
+import net.ae97.pokebot.extensions.mcping.pings.exceptions.PingException;
+
 /**
  * Represents the server we will attempt to query
  * @author zkxs (zkxs00@gmail.com)
@@ -22,7 +24,7 @@ public class Server {
     private InetSocketAddress address;
     private SrvRecord srvRecord; // if non-null, then this is what we're using
 
-    public Server(String hostPort) throws NamingException, URISyntaxException {
+    public Server(String hostPort) throws NamingException, URISyntaxException, PingException {
         this(Server.parseHostPort(hostPort));
     }
     
@@ -103,13 +105,12 @@ public class Server {
     /**
      * Parse host-port strings
      * 
-     * @param hostPort
-     *            A string of the format "example.com" or example.com:25565"
+     * @param hostPort A string of the format "example.com" or example.com:25565"
      * @return an InetSocketAddress with the appropriate host and port
-     * @throws URISyntaxException
-     *             If the URI is invalid
+     * @throws URISyntaxException If the URI is invalid
+     * @throws PingException if the port is out of range
      */
-    public static InetSocketAddress parseHostPort(String hostPort) throws URISyntaxException {
+    public static InetSocketAddress parseHostPort(String hostPort) throws URISyntaxException, PingException {
         URI uri = new URI("minecraft://" + hostPort);
         final String host = uri.getHost();
         int port = uri.getPort();
@@ -122,8 +123,12 @@ public class Server {
         if (port == -1) {
             port = DEFAULT_SERVER_PORT;
         }
-
-        return new InetSocketAddress(host, port);
+        
+        try {
+            final InetSocketAddress toReturn = new InetSocketAddress(host, port);
+            return toReturn;
+        } catch (IllegalArgumentException e) {
+            throw new PingException(e);
+        }
     }
-
 }
