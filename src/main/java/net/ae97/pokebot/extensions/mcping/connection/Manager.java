@@ -47,7 +47,7 @@ public class Manager {
             threadRunning = true;
             final Thread managerThread = new Thread(new ManagerThread(selector, this::threadClosedCallback, lock),
                     "McPing-Selector-" + System.currentTimeMillis());
-            managerThread.setDaemon(false);
+            managerThread.setDaemon(true);
             PokeBot.getLogger().log(Level.INFO, "McPing Manager starting up");
             managerThread.start();
         }
