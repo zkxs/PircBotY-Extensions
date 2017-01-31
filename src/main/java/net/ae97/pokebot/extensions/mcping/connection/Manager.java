@@ -100,7 +100,7 @@ public class Manager {
         } catch (UnresolvedAddressException e) {
             throw new PingException("Address Not resolved: " + server.getAddress().toString(), e);
         } catch (IOException e) {
-            throw new PingException(e);
+            throw new PingException(e.getMessage(), e);
         }
         
         PingImplementationFactory factory = LegacyStatus::new;
