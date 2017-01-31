@@ -128,7 +128,7 @@ public class Server {
             final InetSocketAddress toReturn = new InetSocketAddress(host, port);
             return toReturn;
         } catch (IllegalArgumentException e) {
-            throw new PingException(e);
+            throw new PingException(e.getMessage(), e);
         }
     }
 }
