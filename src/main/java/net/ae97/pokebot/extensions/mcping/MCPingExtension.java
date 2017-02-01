@@ -19,6 +19,7 @@ package net.ae97.pokebot.extensions.mcping;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import javax.naming.NamingException;
 
@@ -30,13 +31,11 @@ import net.ae97.pokebot.extension.ExtensionLoadFailedException;
 import net.ae97.pokebot.extensions.mcping.connection.Manager;
 import net.ae97.pokebot.extensions.mcping.pings.exceptions.PingException;
 import net.ae97.pokebot.extensions.mcping.pings.exceptions.UnexpectedPingException;
+import net.ae97.pokebot.logger.PrefixLogger;
 
-/**
- *
- * @author Joshua
- */
 public class MCPingExtension extends Extension implements CommandExecutor {
 
+    private static Logger logger = new PrefixLogger(MCPingExtension.class.getName(), PokeBot.getLogger());
     private Manager manager;
     
     @Override
@@ -45,7 +44,7 @@ public class MCPingExtension extends Extension implements CommandExecutor {
         try {
             manager = new Manager();
         } catch (IOException e) {
-            PokeBot.getLogger().log(Level.SEVERE, "Error starting McPing Manager", e);
+            getMcPingLogger().log(Level.SEVERE, "Error starting McPing Manager", e);
         }
     }
     
@@ -63,10 +62,10 @@ public class MCPingExtension extends Extension implements CommandExecutor {
             ce.respond("Error: " + e.getMessage());
         } catch (NamingException e) {
             ce.respond("Error: " + e.getMessage());
-            PokeBot.getLogger().log(Level.WARNING, "Error during DNS query", e);
+            getMcPingLogger().log(Level.WARNING, "Error during DNS query", e);
         } catch (UnexpectedPingException e) {
             ce.respond("Error: " + e.getMessage());
-            PokeBot.getLogger().log(Level.WARNING, "Error during ping", e);
+            getMcPingLogger().log(Level.WARNING, "Error during ping", e);
         } catch (PingException e) {
             ce.respond("Error: " + e.getMessage());
         }
@@ -82,5 +81,9 @@ public class MCPingExtension extends Extension implements CommandExecutor {
     @Override
     public String getName() {
         return "mcping";
+    }
+    
+    public static Logger getMcPingLogger() {
+        return logger;
     }
 }

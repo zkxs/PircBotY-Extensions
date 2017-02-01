@@ -15,7 +15,7 @@ public class PingException extends Exception {
         super(message);
     }
 
-    public PingException(Throwable cause) {
-        super(cause);
+    PingException(Throwable cause) {
+        super(cause.getMessage(), cause);
     }
 }

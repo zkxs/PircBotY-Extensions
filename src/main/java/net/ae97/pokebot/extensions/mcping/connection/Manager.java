@@ -7,18 +7,22 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.nio.channels.UnresolvedAddressException;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
 
 import net.ae97.pircboty.api.events.CommandEvent;
-import net.ae97.pokebot.PokeBot;
+import net.ae97.pokebot.extensions.mcping.MCPingExtension;
 import net.ae97.pokebot.extensions.mcping.Server;
 import net.ae97.pokebot.extensions.mcping.pings.PingImplementation;
 import net.ae97.pokebot.extensions.mcping.pings.PingImplementationFactory;
 import net.ae97.pokebot.extensions.mcping.pings.exceptions.PingException;
 import net.ae97.pokebot.extensions.mcping.pings.exceptions.UnexpectedPingException;
 import net.ae97.pokebot.extensions.mcping.pings.impl.LegacyStatus;
+import net.ae97.pokebot.extensions.mcping.pings.impl.ServerListPing;
 
 /**
  * Keeps track of all ongoing pings. Each ping consists of a PingImplementation. First, the PingImplementation's
@@ -48,8 +52,14 @@ public class Manager {
     /** Used to reuse large-ish bytebuffers */
     private MemoryManager memoryManager = new MemoryManager();
     
+    /** Keeps track of the different types of pings to try */
+    private List<PingImplementationFactory> pingFactories = new LinkedList<>();
+    
     public Manager() throws IOException {
         selector = Selector.open();
+        
+        pingFactories.add(ServerListPing::new);
+        pingFactories.add(LegacyStatus::new);
     }
     
     /**
@@ -62,7 +72,7 @@ public class Manager {
             final Thread managerThread = new Thread(new ManagerThread(selector, this::threadClosedCallback, lock),
                     "McPing-Selector-" + System.currentTimeMillis());
             managerThread.setDaemon(true);
-            PokeBot.getLogger().log(Level.INFO, "McPing Manager starting up");
+            MCPingExtension.getMcPingLogger().log(Level.INFO, "McPing Manager starting up");
             managerThread.start();
         }
     }
@@ -124,7 +134,7 @@ public class Manager {
             throw new PingException(e.getMessage(), e);
         }
         
-        PingImplementationFactory factory = LegacyStatus::new;
+        PingImplementationFactory factory = ServerListPing::new;
         PingImplementation pingImpl = factory.construct(this, socketChannel, new PingResultCallback(commandEvent, server));
         pingImpl.ping();
     }
@@ -134,7 +144,7 @@ public class Manager {
      */
     private void threadClosedCallback() {
         threadRunning = false;
-        PokeBot.getLogger().log(Level.INFO, "McPing Manager shutting down");
+        MCPingExtension.getMcPingLogger().log(Level.INFO, "McPing Manager shutting down");
         // We can't just restart the thread here, as that would keep things from being garbage collected.
         // Therefore, we restart it next time we see a command.
     }

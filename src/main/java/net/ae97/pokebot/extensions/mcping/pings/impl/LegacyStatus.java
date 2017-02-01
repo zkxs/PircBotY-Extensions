@@ -8,11 +8,11 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.logging.Level;
 
-import net.ae97.pokebot.PokeBot;
+import net.ae97.pokebot.extensions.mcping.MCPingExtension;
 import net.ae97.pokebot.extensions.mcping.connection.Manager;
-import net.ae97.pokebot.extensions.mcping.connection.PingResultCallback;
 import net.ae97.pokebot.extensions.mcping.connection.PingFailure;
-import net.ae97.pokebot.extensions.mcping.connection.PingSuccess;
+import net.ae97.pokebot.extensions.mcping.connection.PingResultCallback;
+import net.ae97.pokebot.extensions.mcping.connection.LegacyPingSuccess;
 import net.ae97.pokebot.extensions.mcping.pings.PingImplementation;
 import net.ae97.pokebot.extensions.mcping.pings.exceptions.PingException;
 import net.ae97.pokebot.extensions.mcping.pings.exceptions.UnexpectedPingException;
@@ -112,7 +112,7 @@ public class LegacyStatus implements PingImplementation {
             try {
                 responseString = new String(stringBuf, "UTF-16BE");
             } catch (UnsupportedEncodingException e) {
-                PokeBot.getLogger().log(Level.SEVERE, "What kind of JRE doesn't support UTF-16BE?", e);
+                MCPingExtension.getMcPingLogger().log(Level.SEVERE, "What kind of JRE doesn't support UTF-16BE?", e);
                 callback.onComplete(new PingFailure("Unsupported Encoding: " + e.getMessage()));
                 return;
             }
@@ -147,10 +147,10 @@ public class LegacyStatus implements PingImplementation {
                 socketChannel.close();
             } catch (IOException e) {
                 // We really don't care if we can't close the socket at this point. We're done with it.
-                PokeBot.getLogger().log(Level.WARNING, "Error closing SocketChannel", e);
+                MCPingExtension.getMcPingLogger().log(Level.WARNING, "Error closing SocketChannel", e);
             }
 
-            callback.onComplete(new PingSuccess(fields[0], fields[1], fields[2], currentPlayers, maxPlayers));
+            callback.onComplete(new LegacyPingSuccess(fields[0], fields[1], fields[2], currentPlayers, maxPlayers));
             return;
             
         } finally {

@@ -3,7 +3,7 @@ package net.ae97.pokebot.extensions.mcping.connection;
 import java.util.LinkedList;
 import java.util.List;
 
-public class PingSuccess implements PingResult {
+public class LegacyPingSuccess implements PingResult {
     private String protocolVersion;
     private String serverVersion;
     private String motd;
@@ -18,7 +18,7 @@ public class PingSuccess implements PingResult {
      * @param currentPlayers Current number of players on the server
      * @param maxPlayers Maximum number of players that can be on the server
      */
-    public PingSuccess(String protocolVersion, String serverVersion, String motd, int currentPlayers, int maxPlayers) {
+    public LegacyPingSuccess(String protocolVersion, String serverVersion, String motd, int currentPlayers, int maxPlayers) {
         this.protocolVersion = protocolVersion;
         this.serverVersion = serverVersion;
         this.motd = motd;

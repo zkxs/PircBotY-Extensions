@@ -8,7 +8,7 @@ import java.util.Set;
 import java.util.concurrent.locks.Lock;
 import java.util.logging.Level;
 
-import net.ae97.pokebot.PokeBot;
+import net.ae97.pokebot.extensions.mcping.MCPingExtension;
 import net.ae97.pokebot.extensions.mcping.pings.PingImplementation;
 
 /**
@@ -112,7 +112,7 @@ public class ManagerThread implements Runnable {
                 
             } catch (IOException e) {
                 // Could be thrown by selector.select
-                PokeBot.getLogger().log(Level.SEVERE, "Selector.select() I/O error", e);
+                MCPingExtension.getMcPingLogger().log(Level.SEVERE, "Selector.select() I/O error", e);
             }
         }
         
