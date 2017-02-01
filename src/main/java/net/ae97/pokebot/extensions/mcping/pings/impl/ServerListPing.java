@@ -6,7 +6,9 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
+import java.util.logging.Level;
 
+import net.ae97.pokebot.extensions.mcping.MCPingExtension;
 import net.ae97.pokebot.extensions.mcping.connection.JsonPingSuccess;
 import net.ae97.pokebot.extensions.mcping.connection.Manager;
 import net.ae97.pokebot.extensions.mcping.connection.PingFailure;
@@ -24,6 +26,7 @@ public class ServerListPing implements PingImplementation {
     private static final int PROTOCOL_VERSION = 47;
     private static final int HANDSHAKE_PACKET_ID = 0x00;
     private static final int REQUEST_PACKET_ID = 0x00;
+    private static final int PING_PACKET_ID = 0x01;
     private static final int STATUS_STATE = 1;
     
     private Manager manager;
@@ -56,6 +59,7 @@ public class ServerListPing implements PingImplementation {
         sendBuffer.clear();
         sendBuffer.order(ByteOrder.BIG_ENDIAN);
         
+        // create handshake packet
         VarInt.write(PROTOCOL_VERSION, sendBuffer);
         PrefixedString.write(host, sendBuffer);
         sendBuffer.putShort(port);
@@ -63,8 +67,25 @@ public class ServerListPing implements PingImplementation {
         
         try {
             Packet.send(HANDSHAKE_PACKET_ID, sendBuffer, socketChannel);
-            sendBuffer.clear();
+        } catch (IOException e) {
+            throw new UnexpectedPingException(e);
+        }
+        
+        // create request packet
+        sendBuffer.clear();
+        
+        try {
             Packet.send(REQUEST_PACKET_ID, sendBuffer, socketChannel);
+        } catch (IOException e) {
+            throw new UnexpectedPingException(e);
+        }
+        
+        // create ping packet
+        sendBuffer.clear();
+        sendBuffer.putLong(System.currentTimeMillis());
+        
+        try {
+            Packet.send(PING_PACKET_ID, sendBuffer, socketChannel);
         } catch (IOException e) {
             throw new UnexpectedPingException(e);
         }
@@ -107,6 +128,9 @@ public class ServerListPing implements PingImplementation {
             // prepare for reading
             receiveBuffer.flip();
             receiveBuffer.order(ByteOrder.BIG_ENDIAN);
+            
+            //TODO: remove
+            MCPingExtension.getMcPingLogger().log(Level.INFO, receiveBuffer.toString());
             
             // check packet length
             final int length = VarInt.read(receiveBuffer);

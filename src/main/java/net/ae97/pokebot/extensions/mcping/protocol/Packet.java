@@ -3,7 +3,9 @@ package net.ae97.pokebot.extensions.mcping.protocol;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
+import java.util.logging.Level;
 
+import net.ae97.pokebot.extensions.mcping.MCPingExtension;
 import net.ae97.pokebot.extensions.mcping.protocol.datatypes.VarInt;
 
 public class Packet {
@@ -13,13 +15,18 @@ public class Packet {
 
         // determine the length of the packet id
         VarInt.write(packetId, header);
-        final int packetIdLength = header.position() - 1;
+        header.flip();
+        final int packetIdLength = header.remaining();
 
         header.clear();
         data.flip(); // prepare data for writing
         VarInt.write(packetIdLength + data.remaining(), header);
         VarInt.write(packetId, header);
         header.flip(); // prepare header for writing
+
+        //TODO: remove
+        MCPingExtension.getMcPingLogger().log(Level.INFO,
+                String.format("Sending packet#%d with length %d+%d ", packetId, packetIdLength, data.remaining()));
 
         // write packet to socket
         socket.write(header);
