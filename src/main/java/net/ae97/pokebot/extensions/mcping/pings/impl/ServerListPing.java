@@ -146,6 +146,8 @@ public class ServerListPing implements PingImplementation {
                 final int packetId = VarInt.read(packetBuffer);
                 if (packetId == REQUEST_PACKET_ID) {
                     jsonResponse = PrefixedString.read(packetBuffer);
+                } else if (packetId == PING_PACKET_ID) {
+                    // silently ignore
                 } else {
                     MCPingExtension.getMcPingLogger().log(Level.INFO,
                             String.format("Received unknown packet type %d of length %d", packetId, packetLength));
