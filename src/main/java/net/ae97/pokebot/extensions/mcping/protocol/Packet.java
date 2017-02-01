@@ -24,10 +24,6 @@ public class Packet {
         VarInt.write(packetId, header);
         header.flip(); // prepare header for writing
 
-        //TODO: remove
-        MCPingExtension.getMcPingLogger().log(Level.INFO,
-                String.format("Sending packet#%d with length %d+%d ", packetId, packetIdLength, data.remaining()));
-
         // write packet to socket
         socket.write(header);
         socket.write(data);

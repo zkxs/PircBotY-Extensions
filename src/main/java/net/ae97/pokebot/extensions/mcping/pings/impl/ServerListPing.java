@@ -142,29 +142,17 @@ public class ServerListPing implements PingImplementation {
                 final byte[] packetBytes = new byte[packetLength];
                 receiveBuffer.get(packetBytes);
                 final ByteBuffer packetBuffer = ByteBuffer.wrap(packetBytes);
-                
-                //TODO: remove
-//                StringBuilder sb = new StringBuilder();
-//                for (byte b : packetBytes) {
-//                    sb.append(String.format("%02X", b));
-//                }
 
                 final int packetId = VarInt.read(packetBuffer);
-
-                // TODO: remove
-                MCPingExtension.getMcPingLogger().log(Level.INFO,
-                        String.format("Received packet#%d of length %d", packetId, packetLength));
-//                MCPingExtension.getMcPingLogger().log(Level.INFO, sb.toString());
-
                 if (packetId == REQUEST_PACKET_ID) {
                     jsonResponse = PrefixedString.read(packetBuffer);
+                } else {
+                    MCPingExtension.getMcPingLogger().log(Level.INFO,
+                            String.format("Received unknown packet type %d of length %d", packetId, packetLength));
                 }
             }
 
             if (jsonResponse != null) {
-                // TODO: remove
-                MCPingExtension.getMcPingLogger().log(Level.INFO,
-                        String.format("response[%d]=\"%s\"", jsonResponse.length(), jsonResponse));
                 callback.onComplete(new JsonPingSuccess(jsonResponse));
             } else {
                 callback.onComplete(new PingFailure("Did not receive ping response packet"));

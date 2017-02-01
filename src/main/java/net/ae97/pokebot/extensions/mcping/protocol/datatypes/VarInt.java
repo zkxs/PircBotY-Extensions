@@ -30,7 +30,6 @@ public class VarInt {
             read = buf.get();
             final int value = (read & 0b01111111);
             result |= (value << (7 * numRead));
-            MCPingExtension.getMcPingLogger().log(Level.INFO, String.format("VIB=%02X, value=%d", read, result));
 
             numRead++;
             if (numRead > 5) {
