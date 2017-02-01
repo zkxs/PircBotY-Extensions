@@ -7,10 +7,10 @@ import java.nio.channels.SocketChannel;
 import net.ae97.pokebot.extensions.mcping.connection.Manager;
 import net.ae97.pokebot.extensions.mcping.protocol.datatypes.VarInt;
 
-public class Packet {
+public class OutgoingPacket {
     private ByteBuffer data;
 
-    public Packet(Manager manager) {
+    public OutgoingPacket(Manager manager) {
         data = manager.getMemoryManager().allocate();
         data.clear();
     }
