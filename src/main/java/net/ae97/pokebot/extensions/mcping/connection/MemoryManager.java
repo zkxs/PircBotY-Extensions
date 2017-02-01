@@ -3,6 +3,13 @@ package net.ae97.pokebot.extensions.mcping.connection;
 import java.nio.ByteBuffer;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
+/**
+ * Allows for reuse of bytebuffers. For simplicity, we simply make byte buffers of the maximal required size. Due to
+ * this, they can be rather large. We reduce memory allocations by reusing byte buffers.
+ * 
+ * Additionally, we only keep up to MAX_BUFFERS buffers stored for reuse. This prevents a sudden spike of ping from
+ * permanently increasing the memory used by this McPingExtension
+ */
 public class MemoryManager {
     private ConcurrentLinkedQueue<ByteBuffer> bufferQueue = new ConcurrentLinkedQueue<>();
     

@@ -21,8 +21,18 @@ import net.ae97.pokebot.extensions.mcping.pings.exceptions.UnexpectedPingExcepti
 import net.ae97.pokebot.extensions.mcping.pings.impl.LegacyStatus;
 
 /**
- * Keeps track of 
- * TODO: document
+ * Keeps track of all ongoing pings. Each ping consists of a PingImplementation. First, the PingImplementation's
+ * ping() method is called, from the same thread that calls Manager.ping(). Then the PingImplementation is responsible
+ * for calling registerChannel() to mark the channel as ready for reading.
+ * 
+ * Reading occurs in a ManagerThread. Each manager has at either 0 or 1 manager threads. Manager threads
+ * are automatically shut down after a period of inactivity. This is to allow the extension to be garbage collected if
+ * it has been unloaded. When the ManagerThread finds a readable channel, it calls onReadable() for the associated
+ * PingImplementation.
+ * 
+ * The manager also periodically check to see if a ping has hung, and if it has closes its
+ * connection. Pings can hang if they are made to a server that is not a minecraft server. This can be reproduced by
+ * pinging a netcat server. 
  */
 public class Manager {
     
@@ -42,6 +52,10 @@ public class Manager {
         selector = Selector.open();
     }
     
+    /**
+     * Start the manager thread, if it is not already running.
+     * This is synchronized to prevent two manager threads from being started.
+     */
     private synchronized void startManager() {
         if (!threadRunning) {
             threadRunning = true;
@@ -82,6 +96,7 @@ public class Manager {
             final SelectionKey key = channel.register(selector, ops, attachment);
             lock.unlock();
             
+            // start the manager, if it is not already started
             startManager();
             return key;
         } catch (ClosedChannelException e) {
@@ -91,6 +106,12 @@ public class Manager {
         }
     }
     
+    /**
+     * Initiate a ping to server
+     * @param commandEvent
+     * @param server
+     * @throws PingException
+     */
     public void ping(CommandEvent commandEvent, Server server) throws PingException {
         
         SocketChannel socketChannel = null;
@@ -118,6 +139,10 @@ public class Manager {
         // Therefore, we restart it next time we see a command.
     }
     
+    /**
+     * Get this Manager's MemoryManager instance
+     * @return this Manager's MemoryManager instance
+     */
     public MemoryManager getMemoryManager() {
         return memoryManager;
     }
