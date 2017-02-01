@@ -2,6 +2,7 @@ package net.ae97.pokebot.extensions.mcping.pings.impl;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.SelectionKey;
@@ -28,68 +29,68 @@ public class ServerListPing implements PingImplementation {
     private static final int REQUEST_PACKET_ID = 0x00;
     private static final int PING_PACKET_ID = 0x01;
     private static final int STATUS_STATE = 1;
-    
+
     private Manager manager;
     private SocketChannel socketChannel;
     private PingResultCallback callback;
     private ByteBuffer receiveBuffer;
     private long lastActivityTime = System.currentTimeMillis();
-    
+
     public ServerListPing(Manager manager, SocketChannel socketChannel, PingResultCallback callback) {
         this.manager = manager;
         this.socketChannel = socketChannel;
         this.callback = callback;
     }
-    
+
     @Override
     public void ping() throws PingException {
-        
+
         InetSocketAddress address;
-        
+
         try {
             address = (InetSocketAddress) socketChannel.getRemoteAddress();
         } catch (IOException e) {
             throw new UnexpectedPingException(e);
         }
-        
+
         final String host = address.getHostString();
-        final short port = (short)address.getPort();
-        
+        final short port = (short) address.getPort();
+
         final ByteBuffer sendBuffer = manager.getMemoryManager().allocate();
         sendBuffer.clear();
         sendBuffer.order(ByteOrder.BIG_ENDIAN);
-        
+
         // create handshake packet
         VarInt.write(PROTOCOL_VERSION, sendBuffer);
         PrefixedString.write(host, sendBuffer);
         sendBuffer.putShort(port);
         VarInt.write(STATUS_STATE, sendBuffer);
-        
+
         try {
             Packet.send(HANDSHAKE_PACKET_ID, sendBuffer, socketChannel);
         } catch (IOException e) {
             throw new UnexpectedPingException(e);
         }
-        
+
         // create request packet
         sendBuffer.clear();
-        
+
         try {
             Packet.send(REQUEST_PACKET_ID, sendBuffer, socketChannel);
         } catch (IOException e) {
             throw new UnexpectedPingException(e);
         }
-        
+
         // create ping packet
         sendBuffer.clear();
         sendBuffer.putLong(System.currentTimeMillis());
-        
+
         try {
             Packet.send(PING_PACKET_ID, sendBuffer, socketChannel);
         } catch (IOException e) {
             throw new UnexpectedPingException(e);
         }
-        
+
         manager.getMemoryManager().free(sendBuffer);
 
         // register listener for server response
@@ -98,9 +99,9 @@ public class ServerListPing implements PingImplementation {
 
     @Override
     public void onReadable(SelectionKey key) {
-        
+
         lastActivityTime = System.currentTimeMillis();
-        
+
         if (receiveBuffer == null) {
             receiveBuffer = manager.getMemoryManager().allocate();
             receiveBuffer.clear();
@@ -119,47 +120,68 @@ public class ServerListPing implements PingImplementation {
             cleanup(key);
             return;
         }
-        
-        /* This try doesn't catch anything. It's just so I can use a finally to
-         * free the receiveBuffer instead of doing so before every return.
+
+        /*
+         * This try doesn't catch anything. It's just so I can use a finally to free the receiveBuffer instead of doing
+         * so before every return.
          */
         try {
-            
+
             // prepare for reading
             receiveBuffer.flip();
             receiveBuffer.order(ByteOrder.BIG_ENDIAN);
-            
-            //TODO: remove
-            MCPingExtension.getMcPingLogger().log(Level.INFO, receiveBuffer.toString());
-            
-            // check packet length
-            final int length = VarInt.read(receiveBuffer);
-            if (length != receiveBuffer.remaining()) {
-                callback.onComplete(new PingFailure("Invalid Response Packet (length mismatch)"));
-                return;
+
+            String jsonResponse = null;
+
+            // read packets
+            while (receiveBuffer.remaining() != 0) {
+                // check packet length
+                final int packetLength = VarInt.read(receiveBuffer);
+
+                // read packet
+                final byte[] packetBytes = new byte[packetLength];
+                receiveBuffer.get(packetBytes);
+                final ByteBuffer packetBuffer = ByteBuffer.wrap(packetBytes);
+                
+                //TODO: remove
+//                StringBuilder sb = new StringBuilder();
+//                for (byte b : packetBytes) {
+//                    sb.append(String.format("%02X", b));
+//                }
+
+                final int packetId = VarInt.read(packetBuffer);
+
+                // TODO: remove
+                MCPingExtension.getMcPingLogger().log(Level.INFO,
+                        String.format("Received packet#%d of length %d", packetId, packetLength));
+//                MCPingExtension.getMcPingLogger().log(Level.INFO, sb.toString());
+
+                if (packetId == REQUEST_PACKET_ID) {
+                    jsonResponse = PrefixedString.read(packetBuffer);
+                }
             }
-            
-            // check packet id
-            final int packetId = VarInt.read(receiveBuffer);
-            if (packetId != REQUEST_PACKET_ID) {
-                callback.onComplete(new PingFailure("Received wrong packet type: " + packetId));
-                return;
+
+            if (jsonResponse != null) {
+                // TODO: remove
+                MCPingExtension.getMcPingLogger().log(Level.INFO,
+                        String.format("response[%d]=\"%s\"", jsonResponse.length(), jsonResponse));
+                callback.onComplete(new JsonPingSuccess(jsonResponse));
+            } else {
+                callback.onComplete(new PingFailure("Did not receive ping response packet"));
             }
-            
-            final String jsonResponse = PrefixedString.read(receiveBuffer);
-            
-            callback.onComplete(new JsonPingSuccess(jsonResponse));
-            return;
-            
+
         } catch (DataTypeException e) {
-            callback.onComplete(new PingFailure("Invalid Response Packet"));
+            callback.onComplete(new PingFailure("Invalid Response Packet (bad datatype)"));
+            return;
+        } catch (BufferUnderflowException e) {
+            callback.onComplete(new PingFailure("Invalid Response Packet (underflow)"));
             return;
         } finally {
             cleanup(key);
         }
 
     }
-    
+
     /**
      * Free any resources this ping was using
      */

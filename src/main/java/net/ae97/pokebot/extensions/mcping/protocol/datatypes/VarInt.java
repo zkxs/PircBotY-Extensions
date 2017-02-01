@@ -1,6 +1,9 @@
 package net.ae97.pokebot.extensions.mcping.protocol.datatypes;
 
 import java.nio.ByteBuffer;
+import java.util.logging.Level;
+
+import net.ae97.pokebot.extensions.mcping.MCPingExtension;
 
 /**
  * See http://wiki.vg/Protocol#VarInt_and_VarLong
@@ -25,8 +28,9 @@ public class VarInt {
         byte read;
         do {
             read = buf.get();
-            int value = (read & 0b01111111);
+            final int value = (read & 0b01111111);
             result |= (value << (7 * numRead));
+            MCPingExtension.getMcPingLogger().log(Level.INFO, String.format("VIB=%02X, value=%d", read, result));
 
             numRead++;
             if (numRead > 5) {
